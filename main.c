@@ -1,25 +1,17 @@
+#include "code/TimerManager.h"
+#include "code/commandHandler.h"
+#include "code/drw.h"
+#include "code/social_graph_snippets.h"
+#include "code/SvgLoadingContext.h"
+#include "code/helloworld.h"
 #include <curses.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
-char *read_file(char *file_path) {
-  FILE *file = fopen(file_path, "r");
-
-  if (!file)
-    return NULL;
-
-  fseek(file, 0, SEEK_END);
-  long file_size = ftell(file);
-  fseek(file, 0, SEEK_SET);
-
-  char *buffer = malloc(sizeof(char) * (file_size + 1));
-  fread(buffer, sizeof(char), file_size, file);
-  buffer[file_size] = '\0';
-
-  fclose(file);
-
-  return buffer;
-}
+#define CODE_SNIPPETS 6
+#define TYPE_SPEED 5
 
 void setup_colors(void) {
   if (can_change_color()) {
@@ -30,7 +22,7 @@ void setup_colors(void) {
   }
 }
 
-void update_char(int current, char *code, WINDOW *win) {
+void update_char(int current, const char *code, WINDOW *win) {
   box(stdscr, 0, 0);
 
   wmove(win, 0, 0);
@@ -48,7 +40,9 @@ int main(void) {
 
   setup_colors();
 
-  char *code = read_file("./code/drw.c");
+  const char *code[CODE_SNIPPETS] = {drw_c, SvgLoadingContext_cpp,
+                                     social_graph_snippets_py, TimerManager_cs,
+                                     commandHandler_ts, helloworld_asm};
 
   int current_char = 0;
 
@@ -60,11 +54,20 @@ int main(void) {
   scrollok(win, TRUE);
   wbkgd(win, COLOR_PAIR(1));
 
-  while (1) {
-    getch();
+  srand(time(NULL));
 
-    current_char++;
-    update_char(current_char, code, win);
+  while (1) {
+    // randomly select a snippet from the code
+    int snippet_index = rand() % CODE_SNIPPETS;
+
+    while (1) {
+      while (getch() != ERR) {
+        for (int i = 0; i < TYPE_SPEED; i++) {
+          current_char++;
+          update_char(current_char, code[snippet_index], win);
+        }
+      }
+    }
   }
 
   endwin();
